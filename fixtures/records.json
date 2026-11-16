@@ -1,0 +1,20 @@
+[
+  {
+    "sourceId": "supplier-stock-demo-1",
+    "source": "sample-source",
+    "observedAt": "2026-11-16T09:00:00Z",
+    "label": "库存条目",
+    "attributes": {
+      "sample": true
+    }
+  },
+  {
+    "sourceId": "supplier-stock-demo-2",
+    "source": "sample-source",
+    "observedAt": "2026-11-16T09:05:00Z",
+    "label": "库存条目 2",
+    "attributes": {
+      "sample": true
+    }
+  }
+]
