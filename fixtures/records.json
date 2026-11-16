@@ -1,20 +1,16 @@
 [
   {
-    "sourceId": "supplier-stock-demo-1",
-    "source": "sample-source",
-    "observedAt": "2026-11-16T09:00:00Z",
-    "label": "库存条目",
+    "sourceId": "A-100",
+    "source": "供应商库存观察器",
+    "observedAt": "2026-11-16T08:00:00Z",
+    "label": "A-100",
     "attributes": {
-      "sample": true
-    }
-  },
-  {
-    "sourceId": "supplier-stock-demo-2",
-    "source": "sample-source",
-    "observedAt": "2026-11-16T09:05:00Z",
-    "label": "库存条目 2",
-    "attributes": {
-      "sample": true
+      "supplier": "S1",
+      "sku": "A-100",
+      "warehouse": "W1",
+      "quantity": 8,
+      "batch": "B1",
+      "capturedAt": "2026-11-16T08:00:00Z"
     }
   }
 ]

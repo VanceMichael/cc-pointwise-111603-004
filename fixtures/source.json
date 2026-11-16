@@ -1,0 +1,80 @@
+{
+  "stages": {
+    "opening": {
+      "routes": {
+        "/stock?supplier=S1&warehouse=W1&page=1": {
+          "contentType": "text/html; charset=utf-8",
+          "body": "<!doctype html><html><body><script type=\"application/json\" class=\"source-record\">{\"supplier\": \"S1\", \"sku\": \"A-100\", \"warehouse\": \"W1\", \"quantity\": 8, \"batch\": \"B1\", \"capturedAt\": \"2026-11-16T08:00:00Z\"}</script><a rel=\"next\" href=\"/stock?supplier=S1&warehouse=W2&page=1\">More</a></body></html>",
+          "etag": "\"opening\""
+        },
+        "/stock/manifest": {
+          "contentType": "application/json",
+          "body": {
+            "supplier": "S1",
+            "batch": "B1",
+            "warehouses": [
+              "W1",
+              "W2"
+            ],
+            "complete": true
+          }
+        },
+        "/stock?supplier=S1&warehouse=W2&page=1": {
+          "contentType": "text/html; charset=utf-8",
+          "body": "<!doctype html><html><body><script type=\"application/json\" class=\"source-record\">{\"supplier\": \"S1\", \"sku\": \"A-100\", \"warehouse\": \"W2\", \"quantity\": 13, \"batch\": \"B1\", \"capturedAt\": \"2026-11-16T08:00:00Z\"}</script></body></html>"
+        }
+      }
+    },
+    "updated": {
+      "routes": {
+        "/stock?supplier=S1&warehouse=W1&page=1": {
+          "contentType": "text/html; charset=utf-8",
+          "body": "<!doctype html><html><body><script type=\"application/json\" class=\"source-record\">{\"supplier\": \"S1\", \"sku\": \"A-100\", \"warehouse\": \"W1\", \"quantity\": 5, \"batch\": \"B2\", \"capturedAt\": \"2026-11-16T09:00:00Z\"}</script><a rel=\"next\" href=\"/stock?supplier=S1&warehouse=W2&page=1\">More</a></body></html>",
+          "etag": "\"updated\""
+        },
+        "/stock/manifest": {
+          "contentType": "application/json",
+          "body": {
+            "supplier": "S1",
+            "batch": "B2",
+            "warehouses": [
+              "W1",
+              "W2"
+            ],
+            "complete": true
+          }
+        },
+        "/stock?supplier=S1&warehouse=W2&page=1": {
+          "contentType": "text/html; charset=utf-8",
+          "body": "<!doctype html><html><body><script type=\"application/json\" class=\"source-record\">{\"supplier\": \"S1\", \"sku\": \"A-100\", \"warehouse\": \"W2\", \"quantity\": 11, \"batch\": \"B2\", \"capturedAt\": \"2026-11-16T08:00:00Z\"}</script></body></html>"
+        }
+      }
+    },
+    "incomplete": {
+      "routes": {
+        "/stock?supplier=S1&warehouse=W1&page=1": {
+          "contentType": "text/html; charset=utf-8",
+          "body": "<!doctype html><html><body><script type=\"application/json\" class=\"source-record\">{\"supplier\": \"S1\", \"sku\": \"A-100\", \"warehouse\": \"W1\", \"quantity\": 5, \"batch\": \"B2\", \"capturedAt\": \"2026-11-16T09:00:00Z\"}</script><a rel=\"next\" href=\"/stock?supplier=S1&warehouse=W2&page=1\">More</a></body></html>",
+          "etag": "\"updated\""
+        },
+        "/stock/manifest": {
+          "contentType": "application/json",
+          "body": {
+            "supplier": "S1",
+            "batch": "B2",
+            "warehouses": [
+              "W1",
+              "W2"
+            ],
+            "complete": false
+          }
+        },
+        "/stock?supplier=S1&warehouse=W2&page=1": {
+          "contentType": "text/html; charset=utf-8",
+          "body": "<!doctype html><html><body><script type=\"application/json\" class=\"source-record\">{\"supplier\": \"S1\", \"sku\": \"A-100\", \"warehouse\": \"W2\", \"quantity\": 11, \"batch\": \"B2\", \"capturedAt\": \"2026-11-16T08:00:00Z\"}</script></body></html>",
+          "status": 503
+        }
+      }
+    }
+  }
+}
