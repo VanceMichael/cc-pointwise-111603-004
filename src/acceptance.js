@@ -23,15 +23,34 @@ try {
   assert.deepEqual(await new CollectionService(reopened).query({}), stored, '重新打开后读取同一份业务记录');
   const second = await new CollectionService(reopened).ingest(page.records);
   assert.equal(second.stored, stored.length, '重放首批记录不重复保存');
+
+  // Whole supplier batch: both warehouses of the same SKU stay separate.
+  const service = new CollectionService(reopened);
+  const client = new SourceClient(source.url);
+  const collected = await service.ingestSupplier(client, { supplier: 'S1' });
+  assert.equal(collected.complete, true);
+  assert.equal(collected.stored, 2);
+  source.publish('incomplete');
+  const failed = await service.ingestSupplier(client, { supplier: 'S1' });
+  assert.equal(failed.complete, false);
+  assert.deepEqual(failed.unconfirmedWarehouses, ['W2']);
   const operations = await readOperations(reopened);
-  assert.deepEqual(operations.rows.map(row => row.sourceId), stored.map(row => row.sourceId));
+  assert.equal(operations.batch, 'B1', '失败的分页保留上次完整批次');
+  assert.deepEqual(operations.rows.map((row) => row.sourceId), ['A-100', 'A-100']);
+  assert.deepEqual(operations.rows.map((row) => row.attributes.quantity), [8, 13]);
   for (const row of operations.rows) {
-    const original = stored.find(record => record.sourceId === row.sourceId);
-    assert.equal(row.source, original.source);
-    assert.equal(row.observedAt, original.observedAt);
-    for (const [field, value] of Object.entries(row.attributes)) assert.deepEqual(value, original.attributes[field] ?? null);
+    assert.equal(row.source, '供应商库存观察器');
+    assert.ok(row.observedAt);
   }
-  console.log(JSON.stringify({accepted: first.accepted, persisted: stored.length, replayStored: second.stored, operationRows: operations.rows.length, status: 'ok'}));
+  console.log(JSON.stringify({
+    accepted: first.accepted,
+    persisted: stored.length,
+    replayStored: second.stored,
+    batch: operations.batch,
+    operationRows: operations.rows.length,
+    lastAttempt: {batch: failed.batch, status: failed.status, unconfirmedWarehouses: failed.unconfirmedWarehouses},
+    status: 'ok',
+  }));
 } finally {
   await source.close();
   await rm(directory, {recursive: true, force: true});
