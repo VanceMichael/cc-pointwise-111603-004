@@ -7,7 +7,9 @@ import { SourceClient } from './source-client.js';
 import { parsePage, entryPath } from './adapter.js';
 import { RecordRepository } from './repository.js';
 import { CollectionService } from './service.js';
-import { readOperations } from './operations.js';
+import { SnapshotRepository } from './snapshot-repository.js';
+import { BatchService } from './batch-service.js';
+import { readOperations, readBatchOperations } from './operations.js';
 
 const source = await startSource(new URL('../fixtures/source.json', import.meta.url));
 const directory = await mkdtemp(join(tmpdir(), 'collection-acceptance-'));
@@ -31,7 +33,50 @@ try {
     assert.equal(row.observedAt, original.observedAt);
     for (const [field, value] of Object.entries(row.attributes)) assert.deepEqual(value, original.attributes[field] ?? null);
   }
-  console.log(JSON.stringify({accepted: first.accepted, persisted: stored.length, replayStored: second.stored, operationRows: operations.rows.length, status: 'ok'}));
+
+  // 批次接入生命周期：完整批次提升、分页失败保留上次结果、新批次重新对账。
+  const snapshotPath = join(directory, 'snapshots.json');
+  const batchService = new BatchService(new SourceClient(source.url), new SnapshotRepository(snapshotPath));
+  const opening = await batchService.collect();
+  assert.equal(opening.complete, true);
+  assert.equal(opening.promoted, true);
+  assert.deepEqual(opening.coverage.unconfirmedWarehouses, []);
+
+  source.publish('incomplete');
+  const failed = await batchService.collect();
+  assert.equal(failed.complete, false);
+  assert.equal(failed.promoted, false);
+  assert.deepEqual(failed.coverage.unconfirmedWarehouses, ['W2']);
+  const afterFailure = new SnapshotRepository(snapshotPath);
+  assert.equal((await afterFailure.readActive()).batch, 'B1', '分页失败须保留上次完整批次');
+  const keptBatch = (await afterFailure.readActive()).batch;
+  const blockedView = await readBatchOperations(afterFailure);
+  assert.equal(blockedView.batch, 'B1');
+  assert.ok(blockedView.coverage.warehouses.find((w) => w.warehouse === 'W1'));
+
+  source.publish('updated');
+  const recovered = await batchService.collect();
+  assert.equal(recovered.complete, true);
+  assert.equal(recovered.previousBatch, 'B1');
+  const afterRecovery = new SnapshotRepository(snapshotPath);
+  const active = await afterRecovery.readActive();
+  assert.equal(active.batch, 'B2');
+  assert.deepEqual(active.records.map((record) => record.sourceId), ['S1|A-100|W1', 'S1|A-100|W2']);
+  const view = await readBatchOperations(afterRecovery);
+  assert.equal(view.rows.length, 2);
+  assert.deepEqual(view.coverage.unconfirmedWarehouses, []);
+
+  console.log(JSON.stringify({
+    accepted: first.accepted,
+    persisted: stored.length,
+    replayStored: second.stored,
+    operationRows: operations.rows.length,
+    openingBatch: opening.batch,
+    failedBatchKept: keptBatch,
+    recoveredBatch: active.batch,
+    recoveredRows: view.rows.length,
+    status: 'ok',
+  }));
 } finally {
   await source.close();
   await rm(directory, {recursive: true, force: true});
